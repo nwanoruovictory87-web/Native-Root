@@ -20,7 +20,7 @@ void create_browser_window(int argc, char *argv[], Gtk_Browser *GtkB){
    fprintf(stdout, "Root Browser Started! \n");
    gtk_init(&argc, &argv); //this starts gtk fun flow
    (GtkB->window)= gtk_window_new(GTK_WINDOW_TOPLEVEL); //initailize global browser
-   gtk_window_set_default_size(GTK_WINDOW(GtkB->window), 1200, 800);// set default window size
+   gtk_window_set_default_size(GTK_WINDOW(GtkB->window), 1200, 700);// set default window size
    gtk_window_set_title(GTK_WINDOW(GtkB->window), "Root Browser");
    g_signal_connect(GtkB->window, "destroy", G_CALLBACK(close_browser), NULL);// add listiner on window close button clicked
 };
