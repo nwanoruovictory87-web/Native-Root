@@ -34,11 +34,12 @@ void procces_client_requst(int *client_id){
 } 
 void* listen_on_client_connection(void *Socket ){
    SOCKET_DATA *p_socket= (SOCKET_DATA *)(Socket);
-   while (1)
-   {
-     int client_id= accept((p_socket->server_fd), NULL, NULL);
-   procces_client_requst(&client_id);
-   };
+   int client_id= accept((p_socket->server_fd), NULL, NULL);
+   //procces_client_requst(&client_id);
+   char buffer[4086];
+   read(client_id, buffer, sizeof(buffer));
+   fprintf(stdout, "data %s \n", (buffer));
+   
 }
 void create_http_socket(SOCKET_DATA *Socket){
    //create http socket that returns a port
@@ -126,10 +127,12 @@ webkit_settings_set_enable_javascript(settings, TRUE);
 webkit_settings_set_enable_developer_extras(settings, TRUE); // right-click inspect
 }
 //load fronend
-void load_fronted(Web_View *Wbv, char path[], int isPath, char *url){
+void load_fronted(Web_View *Wbv, char path[], int isPath, char *url, SOCKET_DATA *Socket, pthread_t *Socket_thread){
    if(isPath){//if isPath load url added by client
    webkit_web_view_load_uri(Wbv->webview, (url));
    }else{// load default vanila js script in static folder
+   create_http_socket(Socket);
+   pthread_create(Socket_thread, NULL, listen_on_client_connection, Socket);
    webkit_web_view_load_uri(Wbv->webview, path);
    };
 };
@@ -143,13 +146,11 @@ int main(int argc, char *argv[]){
    Gtk_Browser GtkB;// create global browser gtk data
    Web_View Wbv;
    SOCKET_DATA Socket; Socket.server_fd= 0;// set file id to 0 so as on older function call i can know if file was created or note
-   create_http_socket(&Socket);
    pthread_t Socket_thread;
-   pthread_create(&Socket_thread, NULL, listen_on_client_connection, &Socket);
    create_browser_window(argc, argv, &GtkB);
    create_webview_manage_and_link_to_backend(&Wbv);
    enable_developer_settings(&Wbv);
-   load_fronted(&Wbv, "file:///home/victory/c-asm-home-space/Native-Root/static/index.html", isPathAdded, argvAtIndex2);
+   load_fronted(&Wbv, "http://localhost:8080/", isPathAdded, argvAtIndex2, &Socket, &Socket_thread);
    push_to_frontend(&Wbv, "hhh");
    activate_browser_window(&GtkB, &Wbv);//note anything after this is not runned as code stop here
    //fprintf(stdout, "log %d and %s \n", argc, argv[0]);
