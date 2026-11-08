@@ -16,6 +16,9 @@ void close_browser(void){
    fprintf(stdout, "Browser closed! \n");
    gtk_main_quit();
 };
+char * create_http_socket(){
+   //create http socket that returns a port
+}
 //create gtk window/body frame
 void create_browser_window(int argc, char *argv[], Gtk_Browser *GtkB){
    fprintf(stdout, "Root Browser Started! \n");
