@@ -55,6 +55,7 @@ void create_http_socket(SOCKET_DATA *Socket){
       (Socket->port)=(address_port.sin_port);
       fprintf(stdout, "Socket runing on port :8080 and ip = %d \n", (Socket->port));
     }else{
+      (Socket->server_fd)= 0;// set back to zero as it filed to listen
       fprintf(stdout, "Erro socket not runing \n");
     }
 }
@@ -126,7 +127,7 @@ int main(int argc, char *argv[]){
    };	
    Gtk_Browser GtkB;// create global browser gtk data
    Web_View Wbv;
-   SOCKET_DATA Socket;
+   SOCKET_DATA Socket; Socket.server_fd=0;// set file id to 0 so as on older function call i can know if file was created or note
    create_http_socket(&Socket);
    create_browser_window(argc, argv, &GtkB);
    create_webview_manage_and_link_to_backend(&Wbv);
