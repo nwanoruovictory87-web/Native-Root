@@ -5,7 +5,7 @@
     <link rel="stylesheet" href="./fonts/css/all.css" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Native Root</title>
-    <script src="./main.js"></script>
+
     <link rel="stylesheet" href="./global.css" />
   </head>
   <style></style>
@@ -15,11 +15,7 @@
     <div style="width: 100%; height: 100vh; background-color: blue"></div>
     <div style="width: 100%; height: 100vh; background-color: green"></div>
     <div id="root"></div>
-    <script>
-      function backendBrige(str) {
-        //backend bride that calls cc
-        window.webkit.messageHandlers.myBackend.postMessage(str);
-      }
-    </script>
+    <script src="../config/brige.js"></script>
+    <script src="./main.js"></script>
   </body>
 </html>
