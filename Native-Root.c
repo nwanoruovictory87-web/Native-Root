@@ -1,3 +1,8 @@
+#include <sys/socket.h>//import system socket files and Apis
+#include <netinet/in.h> //has a struct proparty to discripe how  theIp and port would be
+#include <unistd.h> //this contains function read();, write(), and close();
+#include <stdlib.h> //helper functions
+#include <string.h>// helper string functions
 #include <stdio.h>
 #include <gtk-3.0/gtk/gtk.h>
 #include <webkitgtk-4.1/webkit2/webkit2.h>
@@ -12,12 +17,46 @@ typedef struct Web_View
   WebKitWebView *webview;
   WebKitUserContentManager *manager;
 }Web_View;
+typedef struct SOCKET{
+   int server_fd;
+   int port;
+}SOCKET_DATA;
+//
 void close_browser(void){
    fprintf(stdout, "Browser closed! \n");
    gtk_main_quit();
 };
-char * create_http_socket(){
+//char * 
+void create_http_socket(SOCKET_DATA *Socket){
    //create http socket that returns a port
+   //note socket returns 1 if it failed to create socket else 3 if succesfull
+    (Socket->server_fd)= socket(AF_INET, SOCK_STREAM, 0); //AF_INET is discriping the kind of IP that the file should have in this case IPV4 and this SOCK_STREAM tells it we need a tcp socket if it was SOCK_DRAM it means UDP, and last agument means the keynal get to pick the protocall for tcp
+   if((Socket->server_fd) == 1){
+      fprintf(stdout, "Filed to create socket exiting \n");
+   }else{
+      fprintf(stdout, "TCP socket file created \n");
+   };
+   //create IP and Port address
+   struct sockaddr_in address_port; //this struct defines the ip and port of IPV4;
+   memset(&address_port, 0, sizeof(address_port));
+   address_port.sin_family = AF_INET; // define the what kind of port is created in this caseIPV4 family
+   address_port.sin_addr.s_addr=INADDR_ANY; //inet_addr("127.0.0.1");// define what ip address should the socket listen on INADDR_ANY makes it listin on all ip on the device while inet_addr("port") picks a particulay port to listen on
+   address_port.sin_port= htons(8080);// this is like seting a domain on the ip so client can connect on port 8080 which returns ip   127.0.0.1 to connect to why use htons function becourse the cpu sets it as binery htons converts it to decimal to big india
+   //time to initailes the socket and bind it to an ID to keep track
+   bind((Socket->server_fd), (void *)(struct sockaddr_in *)(&address_port), sizeof(address_port)); // what happens here is that am saying take this socket i have created which is address_port and attech it to my socket file id which is socket_fd and heres the size of the address
+   /*the above code 
+   step 1 requst a blank socket file with aguments type of socket whould the file be which returns a number like and address/id. 
+   step 2 define the socket structure ist IP type IP listining address and its domain/port that connects to the ip
+   step 3 bind the socket structure to the blank socket file id in step one which makes socket_fd inherite all the related structure of step two 
+   note but this not yet visible i only define how the socket whould be and get and address for the socket but  its not yet runing
+   step 3 is to tell the os to listin on this socket by pasing the id then the os checks the socket type and port to listin on  */
+   int isSocketListining= listen((Socket->server_fd), 10);/*this listen on the socket the next aguments says how many requst can be pending/qured before rejecting the next requst*/ //it returns 0 on succes 1 on err
+   if(!isSocketListining) {
+      (Socket->port)=(address_port.sin_port);
+      fprintf(stdout, "Socket runing on port :8080 and ip = %d \n", (Socket->port));
+    }else{
+      fprintf(stdout, "Erro socket not runing \n");
+    }
 }
 //create gtk window/body frame
 void create_browser_window(int argc, char *argv[], Gtk_Browser *GtkB){
@@ -87,6 +126,8 @@ int main(int argc, char *argv[]){
    };	
    Gtk_Browser GtkB;// create global browser gtk data
    Web_View Wbv;
+   SOCKET_DATA Socket;
+   create_http_socket(&Socket);
    create_browser_window(argc, argv, &GtkB);
    create_webview_manage_and_link_to_backend(&Wbv);
    enable_developer_settings(&Wbv);
