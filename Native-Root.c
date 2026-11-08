@@ -30,16 +30,39 @@ void close_browser(void){
 void procces_client_requst(int *client_id){
    char buffer[4086];
    read(*(client_id), buffer, sizeof(buffer));
-   fprintf(stdout, "data %s \n", (buffer));
+   fprintf(stdout, "clinet requst %s \n", (buffer));
+   FILE *indexHtml = fopen("./static/index.html", "rb");
+   if(!indexHtml){// 404 res
+      fclose(indexHtml);
+      char *res404= "HTTP/1.1 404 Not Found\r\n\r\n Not Found";
+      write(*(client_id), res404, strlen(res404));
+      close(*(client_id));
+   }else{
+      fseek(indexHtml, 0, SEEK_END);// go to end of file
+      long fileLength= ftell(indexHtml);// tell position = file size in bytes
+      fseek(indexHtml, 0, SEEK_SET);// go back to start
+      char *fileContentBuffer= malloc(fileLength + 1);// alocate some memory to save file connet to as to not have overflow on stack if file is to big
+      fread(fileContentBuffer, 1, fileLength, indexHtml);// read the file and write to buffer
+      fileContentBuffer[fileLength]= '\0'; // add null tarminator to indicate end of file
+      fclose(indexHtml);
+      char header[256];
+      snprintf(header, sizeof(header), "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\nContent-Length: %ld\r\nConnection: close\r\n\r\n", fileLength);
+      write(*(client_id), header, strlen(header));
+      write(*(client_id), fileContentBuffer, fileLength);
+      free(fileContentBuffer);
+      close(*(client_id));
+   }
+   
 } 
 void* listen_on_client_connection(void *Socket ){
    SOCKET_DATA *p_socket= (SOCKET_DATA *)(Socket);
-   int client_id= accept((p_socket->server_fd), NULL, NULL);
-   //procces_client_requst(&client_id);
-   char buffer[4086];
-   read(client_id, buffer, sizeof(buffer));
-   fprintf(stdout, "data %s \n", (buffer));
-   
+   while (1)
+   {
+      fprintf(stdout, "Listing on new requst \n");
+      int client_id= accept((p_socket->server_fd), NULL, NULL);
+      if(client_id == -1) continue;
+      procces_client_requst(&client_id);
+   };
 }
 void create_http_socket(SOCKET_DATA *Socket){
    //create http socket that returns a port
