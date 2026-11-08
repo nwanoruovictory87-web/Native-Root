@@ -3,6 +3,7 @@
 #include <unistd.h> //this contains function read();, write(), and close();
 #include <stdlib.h> //helper functions
 #include <string.h>// helper string functions
+#include <pthread.h>// multitread
 #include <stdio.h>
 #include <gtk-3.0/gtk/gtk.h>
 #include <webkitgtk-4.1/webkit2/webkit2.h>
@@ -26,13 +27,26 @@ void close_browser(void){
    fprintf(stdout, "Browser closed! \n");
    gtk_main_quit();
 };
-//char * 
+void procces_client_requst(int *client_id){
+   char buffer[4086];
+   read(*(client_id), buffer, sizeof(buffer));
+   fprintf(stdout, "data %s \n", (buffer));
+} 
+void* listen_on_client_connection(void *Socket ){
+   SOCKET_DATA *p_socket= (SOCKET_DATA *)(Socket);
+   while (1)
+   {
+     int client_id= accept((p_socket->server_fd), NULL, NULL);
+   procces_client_requst(&client_id);
+   };
+}
 void create_http_socket(SOCKET_DATA *Socket){
    //create http socket that returns a port
    //note socket returns 1 if it failed to create socket else 3 if succesfull
     (Socket->server_fd)= socket(AF_INET, SOCK_STREAM, 0); //AF_INET is discriping the kind of IP that the file should have in this case IPV4 and this SOCK_STREAM tells it we need a tcp socket if it was SOCK_DRAM it means UDP, and last agument means the keynal get to pick the protocall for tcp
-   if((Socket->server_fd) == 1){
+   if((Socket->server_fd) == -1){
       fprintf(stdout, "Filed to create socket exiting \n");
+      exit(1);
    }else{
       fprintf(stdout, "TCP socket file created \n");
    };
@@ -57,7 +71,8 @@ void create_http_socket(SOCKET_DATA *Socket){
     }else{
       (Socket->server_fd)= 0;// set back to zero as it filed to listen
       fprintf(stdout, "Erro socket not runing \n");
-    }
+      exit(1);
+    };
 }
 //create gtk window/body frame
 void create_browser_window(int argc, char *argv[], Gtk_Browser *GtkB){
@@ -127,8 +142,10 @@ int main(int argc, char *argv[]){
    };	
    Gtk_Browser GtkB;// create global browser gtk data
    Web_View Wbv;
-   SOCKET_DATA Socket; Socket.server_fd=0;// set file id to 0 so as on older function call i can know if file was created or note
+   SOCKET_DATA Socket; Socket.server_fd= 0;// set file id to 0 so as on older function call i can know if file was created or note
    create_http_socket(&Socket);
+   pthread_t Socket_thread;
+   pthread_create(&Socket_thread, NULL, listen_on_client_connection, &Socket);
    create_browser_window(argc, argv, &GtkB);
    create_webview_manage_and_link_to_backend(&Wbv);
    enable_developer_settings(&Wbv);
