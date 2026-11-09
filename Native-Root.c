@@ -105,21 +105,19 @@ void procces_client_requst(int *client_id){
    //asign to extension known content type based on extention
   const char *knownFileExtention= get_mime_type(fullFilePath);
   //
-   fprintf(stdout, "base count length %d full path %s and pathCount %d extension %s\n", baseCount, fullFilePath, pathStartCount, knownFileExtention);
-   FILE *indexHtml = fopen(fullFilePath, "rb");
-   if(!indexHtml){// 404 res
-      fclose(indexHtml);
+   FILE *staticFile = fopen(fullFilePath, "rb");
+   if(!staticFile){// 404 res
       char *res404= "HTTP/1.1 404 Not Found\r\n\r\n Not Found";
       write(*(client_id), res404, strlen(res404));
       close(*(client_id));
    }else{
-      fseek(indexHtml, 0, SEEK_END);// go to end of file
-      long fileLength= ftell(indexHtml);// tell position = file size in bytes
-      fseek(indexHtml, 0, SEEK_SET);// go back to start
+      fseek(staticFile, 0, SEEK_END);// go to end of file
+      long fileLength= ftell(staticFile);// tell position = file size in bytes
+      fseek(staticFile, 0, SEEK_SET);// go back to start
       char *fileContentBuffer= malloc(fileLength + 1);// alocate some memory to save file connet to as to not have overflow on stack if file is to big
-      fread(fileContentBuffer, 1, fileLength, indexHtml);// read the file and write to buffer
+      fread(fileContentBuffer, 1, fileLength, staticFile);// read the file and write to buffer
       fileContentBuffer[fileLength]= '\0'; // add null tarminator to indicate end of file
-      fclose(indexHtml);
+      fclose(staticFile);
       char header[256];
       snprintf(header, sizeof(header), "HTTP/1.1 200 OK\r\nContent-Type: %s\r\nContent-Length: %ld\r\nConnection: close\r\n\r\n", knownFileExtention, fileLength);
       write(*(client_id), header, strlen(header));
