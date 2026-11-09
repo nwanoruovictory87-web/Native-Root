@@ -4,6 +4,7 @@
 #include <stdlib.h> //helper functions
 #include <string.h>// helper string functions
 #include <pthread.h>// multitread
+#include <sys/inotify.h>
 #include <stdio.h>
 #include <gtk-3.0/gtk/gtk.h>
 #include <webkitgtk-4.1/webkit2/webkit2.h>
@@ -22,6 +23,11 @@ typedef struct SOCKET{
    int server_fd;
    int port;
 }SOCKET_DATA;
+typedef struct Watch_Static_Folder_And_Reload{
+   char *path;
+   Web_View *p_wbv; 
+   Gtk_Browser *p_gtk;
+}Watch_And_Reload;
 //
 void close_browser(void){
    fprintf(stdout, "Native Root closed! \n");
@@ -206,9 +212,45 @@ void create_webview_manage_and_link_to_backend(Web_View *Wbv){
     webkit_user_content_manager_register_script_message_handler(Wbv->manager, "myBackend");
     g_signal_connect(Wbv->manager, "script-message-received::myBackend", G_CALLBACK(listen_on_frontend_message), NULL);
 };
+//
+void set_icon_on_gtk_body_frame(Gtk_Browser *GtkB, char *iconPath, int isStatic){
+   if(isStatic){
+     if(!gtk_window_set_icon_from_file(GTK_WINDOW(GtkB->window), iconPath, NULL)){
+         fprintf(stdout, "Failed to apply custom desktop icon  Trying root icon..\n");
+         if(!gtk_window_set_icon_from_file(GTK_WINDOW(GtkB->window), "./modules/icon/root-icon.png", NULL)){
+           gtk_window_set_icon_name(GTK_WINDOW(GtkB->window), "Native Root");
+           fprintf(stdout, "Failed to apply custom desktop icon  Trying system icon..\n");
+         };
+     };
+   }else {
+      if(!gtk_window_set_icon_from_file(GTK_WINDOW(GtkB->window), "./modules/icon/root-icon.png", NULL)){
+        gtk_window_set_icon_name(GTK_WINDOW(GtkB->window), "Native Root");
+        fprintf(stdout, "Failed to apply custom desktop icon  Trying system icon..\n");
+      };
+   }
+   
+};
 // refresh webview
-void refresh_wbeview(Web_View *Wbv){
+void refresh_wbeview(Web_View *Wbv, Gtk_Browser *GtkB){
    webkit_web_view_reload(Wbv->webview);
+   set_icon_on_gtk_body_frame(GtkB, "./static/icon/favicon.png", 1);
+};
+void * watch_static_folder(void *WAR){
+   int file_d= inotify_init();
+   Watch_And_Reload *War= (Watch_And_Reload *)WAR;
+   int watch_dir= inotify_add_watch(file_d, War->path, IN_MODIFY | IN_CREATE |IN_DELETE | IN_MOVE | IN_MOVED_TO);
+   char fileBuffer[4096];
+   while (1)
+   {
+      int len = read(file_d, fileBuffer, sizeof(fileBuffer));// blocks ontil file changes //stops and waith for file file change
+      struct inotify_event *ev =(struct inotify_event *)fileBuffer;
+      if(ev->mask & IN_MODIFY){
+         fprintf(stdout, "Native reload because %s changed\n", ev->name);
+         refresh_wbeview(War->p_wbv, War->p_gtk);
+      };
+      
+   };
+   
 };
 //
 // get html title
@@ -230,24 +272,6 @@ void update_gtk_body_title_with_dom_title(WebKitWebView *Wv, WebKitLoadEvent eve
 void listen_on_dom_page_loaded(Web_View *Wbv, Gtk_Browser *GtkB){
    g_signal_connect(Wbv->webview, "load-changed", G_CALLBACK(update_gtk_body_title_with_dom_title), GtkB);
 }
-//
-void set_icon_on_gtk_body_frame(Gtk_Browser *GtkB, char *iconPath, int isStatic){
-   if(isStatic){
-     if(!gtk_window_set_icon_from_file(GTK_WINDOW(GtkB->window), iconPath, NULL)){
-         fprintf(stdout, "Failed to apply custom desktop icon  Trying root icon..\n");
-         if(!gtk_window_set_icon_from_file(GTK_WINDOW(GtkB->window), "./modules/icon/root-icon.png", NULL)){
-           gtk_window_set_icon_name(GTK_WINDOW(GtkB->window), "Native Root");
-           fprintf(stdout, "Failed to apply custom desktop icon  Trying system icon..\n");
-         };
-     };
-   }else {
-      if(!gtk_window_set_icon_from_file(GTK_WINDOW(GtkB->window), "./modules/icon/root-icon.png", NULL)){
-        gtk_window_set_icon_name(GTK_WINDOW(GtkB->window), "Native Root");
-        fprintf(stdout, "Failed to apply custom desktop icon  Trying system icon..\n");
-      };
-   }
-   
-};
 // enable developer settings
 void enable_developer_settings(Web_View *Wbv){
 WebKitSettings *settings = webkit_web_view_get_settings(Wbv->webview);
@@ -281,6 +305,15 @@ int main(int argc, char *argv[]){
    Web_View Wbv;
    SOCKET_DATA Socket; Socket.server_fd= 0;// set file id to 0 so as on older function call i can know if file was created or note
    pthread_t Socket_thread;
+
+   if(1){// 1 means development and 0 production
+      pthread_t Static_dir_watcher;
+      Watch_And_Reload WAR;
+      WAR.path="./static";
+      WAR.p_wbv= &Wbv;
+      WAR.p_gtk= &GtkB;
+      pthread_create(&Static_dir_watcher, NULL, watch_static_folder, &WAR);
+   };
    create_browser_window(argc, argv, &GtkB);
    create_webview_manage_and_link_to_backend(&Wbv);
    enable_developer_settings(&Wbv);
