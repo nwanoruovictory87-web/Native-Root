@@ -24,13 +24,12 @@ typedef struct SOCKET{
 }SOCKET_DATA;
 //
 void close_browser(void){
-   fprintf(stdout, "Browser closed! \n");
+   fprintf(stdout, "Native Root closed! \n");
    gtk_main_quit();
 };
 void procces_client_requst(int *client_id){
    char clientReqBuffer[4086];
    read(*(client_id), clientReqBuffer, sizeof(clientReqBuffer));
-   fprintf(stdout, "clinet requst %s \n", (clientReqBuffer));
    char reqProtocal[10]={'\0'};
    char path[100]={'\0'};
    int reqProtocalLength=0;
@@ -177,10 +176,10 @@ void create_http_socket(SOCKET_DATA *Socket){
 }
 //create gtk window/body frame
 void create_browser_window(int argc, char *argv[], Gtk_Browser *GtkB){
-   fprintf(stdout, "Root Browser Started! \n");
+   fprintf(stdout, "Native Root Started! \n");
    gtk_init(&argc, &argv); //this starts gtk fun flow
    (GtkB->window)= gtk_window_new(GTK_WINDOW_TOPLEVEL); //initailize global browser
-   gtk_window_set_default_size(GTK_WINDOW(GtkB->window), 800, 500);// set default window size
+   gtk_window_set_default_size(GTK_WINDOW(GtkB->window), 1200, 700);// set default window size
    gtk_window_set_title(GTK_WINDOW(GtkB->window), "Native Root");
    g_signal_connect(GtkB->window, "destroy", G_CALLBACK(close_browser), NULL);// add listiner on window close button clicked
 };
@@ -214,12 +213,24 @@ void refresh_wbeview(Web_View *Wbv){
 };
 //
 // get html title
-void * get_html_title(Web_View *Wbv){
-const char *title= webkit_web_view_get_title(Wbv->webview);
-void *allTitleMem= malloc(sizeof(title));
-(allTitleMem) = (void *)(title);
- return allTitleMem;
+void * get_html_title(WebKitWebView *Wv){
+const char *title= webkit_web_view_get_title(Wv);
+ return (void *)title;
 };
+//
+void update_gtk_body_title_with_dom_title(WebKitWebView *Wv, WebKitLoadEvent event, gpointer data ){
+   if(event == WEBKIT_LOAD_FINISHED){
+      //fprintf(stdout, "DOM Loaded\n");
+      char *domTitle=get_html_title(Wv);
+      //fprintf(stdout, "DOM title %s \n", (domTitle));
+      Gtk_Browser *GtkB= (Gtk_Browser *)data;
+      gtk_window_set_title(GTK_WINDOW(GtkB->window), (domTitle));
+   }
+}
+//
+void listen_on_dom_page_loaded(Web_View *Wbv, Gtk_Browser *GtkB){
+   g_signal_connect(Wbv->webview, "load-changed", G_CALLBACK(update_gtk_body_title_with_dom_title), GtkB);
+}
 // enable developer settings
 void enable_developer_settings(Web_View *Wbv){
 WebKitSettings *settings = webkit_web_view_get_settings(Wbv->webview);
@@ -251,6 +262,7 @@ int main(int argc, char *argv[]){
    pthread_t Socket_thread;
    create_browser_window(argc, argv, &GtkB);
    create_webview_manage_and_link_to_backend(&Wbv);
+   listen_on_dom_page_loaded(&Wbv, &GtkB);
    enable_developer_settings(&Wbv);
    load_fronted(&Wbv, "http://localhost:8080/", isPathAdded, argvAtIndex2, &Socket, &Socket_thread);
    push_to_frontend(&Wbv, "hhh");
