@@ -130,7 +130,6 @@ void* listen_on_client_connection(void *Socket ){
    SOCKET_DATA *p_socket= (SOCKET_DATA *)(Socket);
    while (1)
    {
-      fprintf(stdout, "Listing on new requst \n");
       int client_id= accept((p_socket->server_fd), NULL, NULL);
       if(client_id == -1) continue;
       procces_client_requst(&client_id);
@@ -231,6 +230,13 @@ void update_gtk_body_title_with_dom_title(WebKitWebView *Wv, WebKitLoadEvent eve
 void listen_on_dom_page_loaded(Web_View *Wbv, Gtk_Browser *GtkB){
    g_signal_connect(Wbv->webview, "load-changed", G_CALLBACK(update_gtk_body_title_with_dom_title), GtkB);
 }
+//
+void set_icon_on_gtk_body_frame(Gtk_Browser *GtkB, char *iconPath){
+   if(!gtk_window_set_icon_from_file(GTK_WINDOW(GtkB->window), iconPath, NULL)){
+      fprintf(stdout, "Failed to apply custom desktop icon  Trying system icon..\n");
+      gtk_window_set_icon_name(GTK_WINDOW(GtkB->window), "Native Root");
+   }
+};
 // enable developer settings
 void enable_developer_settings(Web_View *Wbv){
 WebKitSettings *settings = webkit_web_view_get_settings(Wbv->webview);
@@ -264,6 +270,7 @@ int main(int argc, char *argv[]){
    create_webview_manage_and_link_to_backend(&Wbv);
    listen_on_dom_page_loaded(&Wbv, &GtkB);
    enable_developer_settings(&Wbv);
+   set_icon_on_gtk_body_frame(&GtkB, "./static/icon/favicon.png");
    load_fronted(&Wbv, "http://localhost:8080/", isPathAdded, argvAtIndex2, &Socket, &Socket_thread);
    push_to_frontend(&Wbv, "hhh");
    activate_browser_window(&GtkB, &Wbv);//note anything after this is not runned as code stop here
