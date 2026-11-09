@@ -48,7 +48,6 @@ void procces_client_requst(int *client_id){
       reqProtocalLength++;
       pathStartCount++;
    };
-   fprintf(stdout, "data %s rp length %d and path is %s\n", reqProtocal, reqProtocalLength, path);
    if(!(reqProtocal[0] == 'G' && reqProtocal[1] == 'E' && reqProtocal[2] =='T')){// validate that protocal is GET
       char *header400="HTTP/1.1 400 Bad Requst\r\n\r\n";
       write(*(client_id), header400, strlen(header400));
@@ -81,7 +80,32 @@ void procces_client_requst(int *client_id){
          basePathScriptCount++;
       };
    };
-   fprintf(stdout, "base count length %d full path %s and pathCount %d\n", baseCount, fullFilePath, pathStartCount);
+   //validet file extention type
+   const char* get_mime_type(const char *path) {
+    if (strstr(path, ".html")) return "text/html";
+    if (strstr(path, ".js") || strstr(path, ".mjs")) return "application/javascript";
+    if (strstr(path, ".css")) return "text/css";
+    if (strstr(path, ".json")) return "application/json";
+    if (strstr(path, ".wasm")) return "application/wasm";
+    if (strstr(path, ".png")) return "image/png";
+    if (strstr(path, ".jpg") || strstr(path, ".jpeg")) return "image/jpeg";
+    if (strstr(path, ".gif")) return "image/gif";
+    if (strstr(path, ".svg")) return "image/svg+xml";
+    if (strstr(path, ".webp")) return "image/webp";
+    if (strstr(path, ".ico")) return "image/x-icon";
+    if (strstr(path, ".woff2")) return "font/woff2";
+    if (strstr(path, ".woff")) return "font/woff";
+    if (strstr(path, ".ttf")) return "font/ttf";
+    if (strstr(path, ".mp4")) return "video/mp4";
+    if (strstr(path, ".mp3")) return "audio/mpeg";
+    if (strstr(path, ".pdf")) return "application/pdf";
+    if (strstr(path, ".txt")) return "text/plain";
+    return "application/octet-stream"; // default for unknown = download as binary
+};
+   //asign to extension known content type based on extention
+  const char *knownFileExtention= get_mime_type(fullFilePath);
+  //
+   fprintf(stdout, "base count length %d full path %s and pathCount %d extension %s\n", baseCount, fullFilePath, pathStartCount, knownFileExtention);
    FILE *indexHtml = fopen(fullFilePath, "rb");
    if(!indexHtml){// 404 res
       fclose(indexHtml);
@@ -97,7 +121,7 @@ void procces_client_requst(int *client_id){
       fileContentBuffer[fileLength]= '\0'; // add null tarminator to indicate end of file
       fclose(indexHtml);
       char header[256];
-      snprintf(header, sizeof(header), "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\nContent-Length: %ld\r\nConnection: close\r\n\r\n", fileLength);
+      snprintf(header, sizeof(header), "HTTP/1.1 200 OK\r\nContent-Type: %s\r\nContent-Length: %ld\r\nConnection: close\r\n\r\n", knownFileExtention, fileLength);
       write(*(client_id), header, strlen(header));
       write(*(client_id), fileContentBuffer, fileLength);
       free(fileContentBuffer);
