@@ -231,11 +231,22 @@ void listen_on_dom_page_loaded(Web_View *Wbv, Gtk_Browser *GtkB){
    g_signal_connect(Wbv->webview, "load-changed", G_CALLBACK(update_gtk_body_title_with_dom_title), GtkB);
 }
 //
-void set_icon_on_gtk_body_frame(Gtk_Browser *GtkB, char *iconPath){
-   if(!gtk_window_set_icon_from_file(GTK_WINDOW(GtkB->window), iconPath, NULL)){
-      fprintf(stdout, "Failed to apply custom desktop icon  Trying system icon..\n");
-      gtk_window_set_icon_name(GTK_WINDOW(GtkB->window), "Native Root");
+void set_icon_on_gtk_body_frame(Gtk_Browser *GtkB, char *iconPath, int isStatic){
+   if(isStatic){
+     if(!gtk_window_set_icon_from_file(GTK_WINDOW(GtkB->window), iconPath, NULL)){
+         fprintf(stdout, "Failed to apply custom desktop icon  Trying root icon..\n");
+         if(!gtk_window_set_icon_from_file(GTK_WINDOW(GtkB->window), "./modules/icon/root-icon.png", NULL)){
+           gtk_window_set_icon_name(GTK_WINDOW(GtkB->window), "Native Root");
+           fprintf(stdout, "Failed to apply custom desktop icon  Trying system icon..\n");
+         };
+     };
+   }else {
+      if(!gtk_window_set_icon_from_file(GTK_WINDOW(GtkB->window), "./modules/icon/root-icon.png", NULL)){
+        gtk_window_set_icon_name(GTK_WINDOW(GtkB->window), "Native Root");
+        fprintf(stdout, "Failed to apply custom desktop icon  Trying system icon..\n");
+      };
    }
+   
 };
 // enable developer settings
 void enable_developer_settings(Web_View *Wbv){
@@ -244,17 +255,21 @@ webkit_settings_set_enable_javascript(settings, TRUE);
 webkit_settings_set_enable_developer_extras(settings, TRUE); // right-click inspect
 }
 //load fronend
-void load_fronted(Web_View *Wbv, char path[], int isPath, char *url, SOCKET_DATA *Socket, pthread_t *Socket_thread){
+void load_fronted(Web_View *Wbv, char path[], int isPath, char *url, SOCKET_DATA *Socket, pthread_t *Socket_thread, Gtk_Browser *GtkB){
    if(isPath){//if isPath load url added by client
    webkit_web_view_load_uri(Wbv->webview, (url));
+   set_icon_on_gtk_body_frame(GtkB, "./data/static/icon/favicon.png", 0);
    }else{// load default vanila js script in static folder
    create_http_socket(Socket);
    pthread_create(Socket_thread, NULL, listen_on_client_connection, Socket);
    g_usleep(1000 *1000);// wait 1 second before moving to the next line
    fprintf(stdout, "Loading file from static folder \n");
    webkit_web_view_load_uri(Wbv->webview, path);
+   set_icon_on_gtk_body_frame(GtkB, "./static/icon/favicon.png", 1);
+   listen_on_dom_page_loaded(Wbv, GtkB);
    };
 };
+//
 int main(int argc, char *argv[]){
    int isPathAdded=0;	
    int count=0;
@@ -268,10 +283,8 @@ int main(int argc, char *argv[]){
    pthread_t Socket_thread;
    create_browser_window(argc, argv, &GtkB);
    create_webview_manage_and_link_to_backend(&Wbv);
-   listen_on_dom_page_loaded(&Wbv, &GtkB);
    enable_developer_settings(&Wbv);
-   set_icon_on_gtk_body_frame(&GtkB, "./static/icon/favicon.png");
-   load_fronted(&Wbv, "http://localhost:8080/", isPathAdded, argvAtIndex2, &Socket, &Socket_thread);
+   load_fronted(&Wbv, "http://localhost:8080/", isPathAdded, argvAtIndex2, &Socket, &Socket_thread, &GtkB);
    push_to_frontend(&Wbv, "hhh");
    activate_browser_window(&GtkB, &Wbv);//note anything after this is not runned as code stop here
    //fprintf(stdout, "log %d and %s \n", argc, argv[0]);
