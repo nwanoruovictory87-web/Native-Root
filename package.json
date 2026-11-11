@@ -5,7 +5,7 @@
   "main": "index.html",
   "scripts": {
     "linux:install:dep": "sudo apt install gtk+-3.0 webkit2gtk-4.1 ",
-    "linux": "gcc ./Native-Root.c -o Native-Root.out `pkg-config --cflags --libs gtk+-3.0 webkit2gtk-4.1` -lpthread ",
+    "linux:compile": "gcc ./Native-Root.c -o Native-Root.out `pkg-config --cflags --libs gtk+-3.0 webkit2gtk-4.1` -lpthread ",
     "dev-url": "blank"
   },
   "repository": {
