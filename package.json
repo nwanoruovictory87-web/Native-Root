@@ -1,0 +1,25 @@
+{
+  "name": "native-root",
+  "version": "1.0.0",
+  "description": "build desktop apps with html javascript and css",
+  "main": "index.html",
+  "scripts": {
+    "linux:install:dep": "sudo apt install gtk+-3.0 webkit2gtk-4.1 ",
+    "linux": "gcc ./Native-Root.c -o Native-Root.out `pkg-config --cflags --libs gtk+-3.0 webkit2gtk-4.1` -lpthread ",
+    "dev-url": "blank"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/nwanoruovictory87-web/Native-Root.git"
+  },
+  "keywords": [
+    "Native",
+    "Root"
+  ],
+  "author": "Victory Nwanoruo",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/nwanoruovictory87-web/Native-Root/issues"
+  },
+  "homepage": "https://github.com/nwanoruovictory87-web/Native-Root#readme"
+}

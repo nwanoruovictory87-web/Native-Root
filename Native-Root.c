@@ -228,8 +228,7 @@ void create_http_socket(SOCKET_DATA *Socket)
    int isSocketListining = listen((Socket->server_fd), 10); /*this listen on the socket the next aguments says how many requst can be pending/qured before rejecting the next requst*/ // it returns 0 on succes 1 on err
    if (!isSocketListining)
    {
-      (Socket->port) = (address_port.sin_port);
-      fprintf(stdout, "Socket runing on port :8080 and ip = %d \n", (Socket->port));
+      fprintf(stdout, "Socket runing  \n");
    }
    else
    {
@@ -469,7 +468,6 @@ int main(int argc, char *argv[])
    SOCKET_DATA Socket;
    Socket.server_fd = 0; // set file id to 0 so as on older function call i can know if file was created or note
    pthread_t Socket_thread;
-
    if (1)
    { // 1 means development and 0 production
       pthread_t Static_dir_watcher;
